@@ -2,7 +2,7 @@
 
 # webpage to save/settings (we will get the another linked stuff with it like logos, etc.)
 
-webpage = "https://github.com/"
+webpage = input("Scrape Website: ")
 headers = {'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"}
 
 # packages
@@ -12,7 +12,13 @@ from bs4 import BeautifulSoup
 
 # request webpage
 
-req = requests.get(url=webpage, headers=headers)
+req = ""
+
+try:
+    req = requests.get(url=webpage, headers=headers)
+except:
+    print("Invalid url")
+    exit(0)
 
 # our things we will download
 js = []
@@ -54,8 +60,8 @@ for im in web.find_all('img', src=True):
 
 # we got the links and allat lets go ahead and just download em including the webpage
 
-project = "Github Scrape Test"
-this_file = "git.html"
+project = input("Folder Name: ")
+this_file = input("Base Name (example: Scraped.html): ")
 
 # import os
 
@@ -63,14 +69,25 @@ import os
 
 # create folder
 
-os.mkdir(project)
-os.chdir(project)
+try:
+    if os.path.isdir(project) == False:
+        os.mkdir(project)
+
+    os.chdir(project)
+except:
+    print("Failed to create folder")
+    exit()
 
 # create html file
 
-index = open(this_file, 'w')
-index.write(web.prettify())
-index.close()
+try:
+    if os.path.isfile(this_file) == False:
+        index = open(this_file, 'w')
+        index.write(web.prettify())
+        index.close()
+except:
+    print("Failed to create main html file")
+    exit()
 
 # urllib
 
@@ -84,24 +101,27 @@ def extractfn(url):
     return os.path.basename(path)
 
 for link in js:
-    script_dl = requests.get(url=link, headers=headers).content
-    file = open(extractfn(link), 'wb')
-    file.write(script_dl)
-    file.close()
+    if os.path.isfile(extractfn(link)) == False:
+        script_dl = requests.get(url=link, headers=headers).content
+        file = open(extractfn(link), 'wb')
+        file.write(script_dl)
+        file.close()
 
 # css downloads, hopefully easier?
 
 for link in css:
-    style_dl = requests.get(url=link, headers=headers).content
-    file = open(extractfn(link), 'wb')
-    file.write(style_dl)
-    file.close()
+    if os.path.isfile(extractfn(link)) == False:
+        style_dl = requests.get(url=link, headers=headers).content
+        file = open(extractfn(link), 'wb')
+        file.write(style_dl)
+        file.close()
 
 # image.
 
 for link in img:
-    img_dl = requests.get(url=link, headers=headers)
-    test = img_dl.content
-    file = open(extractfn(link), 'wb')
-    file.write(test)
-    file.close()
+    if os.path.isfile(extractfn(link)) == False:
+        img_dl = requests.get(url=link, headers=headers)
+        test = img_dl.content
+        file = open(extractfn(link), 'wb')
+        file.write(test)
+        file.close()
