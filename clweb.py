@@ -2,7 +2,7 @@
 
 # webpage to save/settings (we will get the another linked stuff with it like logos, etc.)
 
-webpage = "https://liablelua.com/"
+webpage = "https://github.com/"
 headers = {'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"}
 
 # packages
@@ -17,6 +17,7 @@ req = requests.get(url=webpage, headers=headers)
 # our things we will download
 js = []
 css = []
+img = []
 
 # start the scraping
 
@@ -47,6 +48,10 @@ for style in web.find_all('link', rel="stylesheet"):
     if endswith(link, '.css'):
         css.append(get_url(link))
 
+for im in web.find_all('img', src=True):
+    link = im.get('src')
+    img.append(get_url(link))
+
 # we got the links and allat lets go ahead and just download em including the webpage
 
 project = "Github Scrape Test"
@@ -67,9 +72,8 @@ index = open(this_file, 'w')
 index.write(web.prettify())
 index.close()
 
-# import js beautifier
+# urllib
 
-import jsbeautifier
 from urllib.parse import urlparse
 
 # script downloads
@@ -79,26 +83,25 @@ def extractfn(url):
     path = parsed.path
     return os.path.basename(path)
 
-def weird_bugfix(scr): # possible use for style saving, idfk what this dumbass bug is
-    editstr1 = scr[1:]
-    editstr2 = editstr1[1:]
-    editstr3 = editstr2[:-1] 
-    return editstr3
-
 for link in js:
     script_dl = requests.get(url=link, headers=headers).content
-    file = open(extractfn(link), 'w')
-    file.write(jsbeautifier.beautify(weird_bugfix(str(script_dl).strip())).strip())
+    file = open(extractfn(link), 'wb')
+    file.write(script_dl)
     file.close()
-
-# import css
-
-import cssbeautifier
 
 # css downloads, hopefully easier?
 
 for link in css:
     style_dl = requests.get(url=link, headers=headers).content
-    file = open(extractfn(link), 'w')
-    file.write(cssbeautifier.beautify(weird_bugfix(str(style_dl).strip())).strip())
+    file = open(extractfn(link), 'wb')
+    file.write(style_dl)
+    file.close()
+
+# image.
+
+for link in img:
+    img_dl = requests.get(url=link, headers=headers)
+    test = img_dl.content
+    file = open(extractfn(link), 'wb')
+    file.write(test)
     file.close()
