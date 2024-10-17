@@ -43,8 +43,9 @@ for script in web.find_all('script', src=True):
         js.append(get_url(src))
 
 for style in web.find_all('link', rel="stylesheet"):
-    link = script.get('link')
-    css.append(get_url(link))
+    link = style.get('href')
+    if endswith(link, '.css'):
+        css.append(get_url(link))
 
 # we got the links and allat lets go ahead and just download em including the webpage
 
@@ -87,7 +88,7 @@ def weird_bugfix(scr): # possible use for style saving, idfk what this dumbass b
 for link in js:
     script_dl = requests.get(url=link, headers=headers).content
     file = open(extractfn(link), 'w')
-    file.write(jsbeautifier.beautify(weird_bugfix(str(script_dl).strip())))
+    file.write(jsbeautifier.beautify(weird_bugfix(str(script_dl).strip())).strip())
     file.close()
 
 # import css
@@ -99,5 +100,5 @@ import cssbeautifier
 for link in css:
     style_dl = requests.get(url=link, headers=headers).content
     file = open(extractfn(link), 'w')
-    file.write(cssbeautifier.beautify(str(style_dl).strip()))
+    file.write(cssbeautifier.beautify(weird_bugfix(str(style_dl).strip())).strip())
     file.close()
