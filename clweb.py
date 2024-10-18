@@ -1,7 +1,3 @@
-# clweb is still a work of progress read the readme
-
-# webpage to save/settings (we will get the another linked stuff with it like logos, etc.)
-
 webpage = input("Scrape Website: ")
 headers = {'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246"}
 
