@@ -2,41 +2,44 @@ webpage = input("Scrape Website: ")
 
 # packages
 
-import http.cookiejar
 import requests
 from bs4 import BeautifulSoup
 import re
 import os
 from urllib.parse import urlparse
-import http
+from requests.utils import cookiejar_from_dict
 from fake_useragent import UserAgent
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from chromedriver_py import binary_path
+
+# session
+
+session = requests.session()
 
 # cookies (you edit these)
 
-cookies = {"test": "hi"} # basically just look up how to use cookies, will be helpful for services that need logins
+cookies = {
+    "Cookie1": "test",
+    "Cookie2": "test"
+}
+
+cookiejar = cookiejar_from_dict(cookies)
+
+session.cookies.update(cookiejar)
 
 # agent
 
 ua = UserAgent()
 agent = ua.random
 
-# selenium
+# failed at adding selenium, sad moment.
 
-opt = Options()
-opt.add_argument(f"user-agent={agent}")
-svc = webdriver.ChromeService(executable_path=binary_path)
-driver = webdriver.Chrome(options=opt, service=svc)
-driver.add_cookie(cookies)
+headers = {"User-Agent": agent}
 
 # request webpage
 
 req = ""
 
 try:
-    req = driver.get(webpage)
+    req = session.get(url=webpage, headers=headers)
 except:
     print("Invalid url")
     exit(0)
@@ -49,7 +52,7 @@ img = []
 
 # start the scraping
 
-web = BeautifulSoup(req.page_source, 'html5lib')
+web = BeautifulSoup(req.content, 'html5lib')
 
 def startswith(string, prefix):
     if string is None or prefix is None:
