@@ -117,8 +117,6 @@ except:
 
 # create html file
 
-# Try creating the main HTML file with better error handling and encoding management
-
 try:
     with open(this_file, 'w', encoding='utf-8') as index:
         html_content = web.prettify()
