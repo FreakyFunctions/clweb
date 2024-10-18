@@ -197,3 +197,5 @@ for link in img:
                 print(f"Downloading IMG: {link}")
     except:
         print(f"Failed to download IMG file: {link}")
+
+print("Finished Scraping")
