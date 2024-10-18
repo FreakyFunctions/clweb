@@ -1,23 +1,24 @@
-# clweb: preserver
-cloneweb/clweb is to scrape/preserve a webpage and its css and javascript contents.
-## q&a
-q: should we use this in production<br>
-a: no, it is not stable<br>
-q: is it still being worked on<br>
-a: yes
-## bugs
-css isn't being saved for some reason.<br>
-random characters being saved in the scraped code<br>
-its not removing trailing even though we are using strip via the process.<br>
-there is no way to check if a folder or file exists yet so it errors.
-## coming soon
-- img saving
-- css saving fixes
-- js and css trailing fixing, etc.
-- ability to spread through all files and download those needed.
-- saving folders like the ones in the links.
-## limitations
-clweb can't do a lot. i mean its made in python ffs.<br>
-if i rewrote in node js, it would probably be 10,000x better but why not take the hard approach.
-## test files
-test files for clweb will appear like fixing files with gpt, etc. soon!
+![alt text](image.png)<br>
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Visual Studio Code](https://img.shields.io/badge/Visual%20Studio%20Code-0078d7.svg?style=for-the-badge&logo=visual-studio-code&logoColor=white)
+![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)
+# Production Use
+This probably has a ton of vulnerabilities so don't use in production!! This should only be standard CLI use.
+# Features
+- Saving HTML, JS, CSS, and Images.
+- Saving the content like images inside css files, etc.
+- Creating folders based off the ones in the link.
+- Replacing URLs for local-use. (Broken)
+- Beautified HTML
+- Clean Saving
+- User-Agent usage
+# Coming Soon
+- Fixing replacing urls
+- Full scrape of html, so it works locally
+- Beautified JS and CSS (needed badly)
+# Contributors
+- me
+- me
+- me
+# Bugs
+- Replacing URLS don't work lmao
