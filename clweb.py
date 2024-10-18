@@ -70,28 +70,7 @@ def get_url(url):
     if startswith(url, 'http'):
         return url
     return requests.compat.urljoin(webpage, url)
-
-for script in web.find_all('script', src=True):
-    src = script.get('src')
-    if endswith(src, '.js'):
-        js.append(get_url(src))
-
-for style in web.find_all('link', rel="stylesheet"):
-    link = style.get('href')
-    if endswith(link, '.css'):
-        css.append(get_url(link))
-
-for im in web.find_all('img', src=True):
-    link = im.get('src')
-    img.append(get_url(link))
-
-# we got the links and allat lets go ahead and just download em including the webpage
-
-project = input("Folder Name: ")
-this_file = input("Base Name (example: Scraped.html): ")
-
-# last minute functions
-
+    
 def create_folder_structure(url):
     parsed_url = urlparse(url)
     path_parts = parsed_url.path.strip("/").split('/')
@@ -103,6 +82,34 @@ def create_folder_structure(url):
             os.mkdir(current_path)
     
     return os.path.join(current_path, path_parts[-1])
+
+for script in web.find_all('script', src=True):
+    src = script.get('src')
+    if endswith(src, '.js'):
+        js.append(get_url(src))
+        script['src'] = create_folder_structure(src)
+
+for style in web.find_all('link', rel="stylesheet"):
+    link = style.get('href')
+    link2 = style.get('data-href')
+    if endswith(link, '.css'):
+        css.append(get_url(link))
+        style['href'] = create_folder_structure(link)
+    if endswith(link2, '.css'):
+        css.append(get_url(link2))
+        style['href'] = create_folder_structure(link2)
+
+for im in web.find_all('img', src=True):
+    link = im.get('src')
+    img.append(get_url(link))
+    im['src'] = create_folder_structure(link)
+
+# we got the links and allat lets go ahead and just download em including the webpage
+
+project = input("Folder Name: ")
+this_file = input("Base Name (example: Scraped.html): ")
+
+# last minute functions
 
 def download_additional_assets(file_content, file_extension):
     additional_assets = []
@@ -139,20 +146,44 @@ except:
     print("Failed to create folder")
     exit()
 
+# html function thingies
+
+def replace_urls(content, original_urls, local_paths):
+    for original_url, local_path in zip(original_urls, local_paths):
+        content = re.sub(re.escape(original_url), local_path, content)
+    return content
+
+def replace_in_file(file_path, original_urls, local_paths):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            content = file.read()
+        
+        updated_content = replace_urls(content, original_urls, local_paths)
+        
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(updated_content)
+        print(f"Replaced URLs in {file_path}")
+    except Exception as e:
+        print(f"Failed to replace URLs in {file_path}. Error: {e}")
+
+def process_html(html_content, js, css, img):
+    all_urls = js + css + img
+    local_paths = [create_folder_structure(url) for url in all_urls]
+    updated_html = replace_urls(html_content, all_urls, local_paths)
+    
+    return updated_html
+
 # create html file
 
 try:
-    with open(this_file, 'w', encoding='utf-8') as index:
+    with open(this_file, 'w') as index:
         html_content = web.prettify()
-
-        for link in js + css + img:
-            local_path = create_folder_structure(link)
-            html_content = html_content.replace(link, local_path)
-        index.write(html_content)
-        print(f"Main HTML file '{this_file}' created successfully.")
+        updated_html = process_html(html_content, js, css, img)
+        index.write(updated_html)
+        print('Created HTML file')
 except Exception as e:
-    print(f"Failed to create main HTML file '{this_file}'. Error: {e}")
-    exit(0)
+    print(f'Failed to create HTML file due to {e}')
+    exit()
 
 # script downloads
 
