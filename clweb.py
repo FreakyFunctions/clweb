@@ -194,5 +194,6 @@ for link in img:
             img_dl = requests.get(url=link, headers=headers).content
             with open(save_path, 'wb') as file:
                 file.write(img_dl)
+                print(f"Downloading IMG: {link}")
     except:
         print(f"Failed to download IMG file: {link}")
