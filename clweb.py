@@ -9,6 +9,9 @@ headers = {'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 
 import requests
 from bs4 import BeautifulSoup
+import re
+import os
+from urllib.parse import urlparse
 
 # request webpage
 
@@ -63,9 +66,43 @@ for im in web.find_all('img', src=True):
 project = input("Folder Name: ")
 this_file = input("Base Name (example: Scraped.html): ")
 
-# import os
+# last minute functions
 
-import os
+def create_folder_structure(url):
+    parsed_url = urlparse(url)
+    path_parts = parsed_url.path.strip("/").split('/')
+    
+    current_path = ""
+    for part in path_parts[:-1]:
+        current_path = os.path.join(current_path, part)
+        if not os.path.exists(current_path):
+            os.mkdir(current_path)
+    
+    return os.path.join(current_path, path_parts[-1])
+
+def download_additional_assets(file_content, file_extension):
+    additional_assets = []
+
+    url_pattern = re.compile(r'url\([\'"]?(.*?)[\'"]?\)')
+    
+    for match in url_pattern.findall(file_content):
+        if not startswith(match, 'data:'):
+            asset_url = get_url(match)
+            additional_assets.append(asset_url)
+    
+    for asset_url in additional_assets:
+        try:
+            save_path = create_folder_structure(asset_url)
+            if not os.path.isfile(save_path):
+                asset_data = requests.get(url=asset_url, headers=headers).content
+                with open(save_path, 'wb') as file:
+                    file.write(asset_data)
+            
+            file_content = file_content.replace(asset_url, save_path)
+        except:
+            print(f"Failed to download asset: {asset_url}")
+    
+    return file_content
 
 # create folder
 
@@ -80,18 +117,20 @@ except:
 
 # create html file
 
+# Try creating the main HTML file with better error handling and encoding management
+
 try:
-    if os.path.isfile(this_file) == False:
-        index = open(this_file, 'w')
-        index.write(web.prettify())
-        index.close()
-except:
-    print("Failed to create main html file")
-    exit()
+    with open(this_file, 'w', encoding='utf-8') as index:
+        html_content = web.prettify()
 
-# urllib
-
-from urllib.parse import urlparse
+        for link in js + css + img:
+            local_path = create_folder_structure(link)
+            html_content = html_content.replace(link, local_path)
+        index.write(html_content)
+        print(f"Main HTML file '{this_file}' created successfully.")
+except Exception as e:
+    print(f"Failed to create main HTML file '{this_file}'. Error: {e}")
+    exit(0)
 
 # script downloads
 
@@ -101,27 +140,39 @@ def extractfn(url):
     return os.path.basename(path)
 
 for link in js:
-    if os.path.isfile(extractfn(link)) == False:
-        script_dl = requests.get(url=link, headers=headers).content
-        file = open(extractfn(link), 'wb')
-        file.write(script_dl)
-        file.close()
+    try:
+        print(f"Downloading JS: {link}")
+        save_path = create_folder_structure(link)
+        if not os.path.isfile(save_path):
+            js_content = requests.get(url=link, headers=headers).text
+            js_content = download_additional_assets(js_content, ".js")
+            with open(save_path, 'w') as file:
+                file.write(js_content)
+    except:
+        print(f"Failed to download JS file: {link}")
 
 # css downloads, hopefully easier?
 
 for link in css:
-    if os.path.isfile(extractfn(link)) == False:
-        style_dl = requests.get(url=link, headers=headers).content
-        file = open(extractfn(link), 'wb')
-        file.write(style_dl)
-        file.close()
+    try:
+        print(f"Downloading CSS: {link}")
+        save_path = create_folder_structure(link)
+        if not os.path.isfile(save_path):
+            css_content = requests.get(url=link, headers=headers).text
+            css_content = download_additional_assets(css_content, ".css")
+            with open(save_path, 'w') as file:
+                file.write(css_content)
+    except:
+        print(f"Failed to download CSS file: {link}")
 
 # image.
 
 for link in img:
-    if os.path.isfile(extractfn(link)) == False:
-        img_dl = requests.get(url=link, headers=headers)
-        test = img_dl.content
-        file = open(extractfn(link), 'wb')
-        file.write(test)
-        file.close()
+    try:
+        save_path = create_folder_structure(link)
+        if not os.path.isfile(save_path):
+            img_dl = requests.get(url=link, headers=headers).content
+            with open(save_path, 'wb') as file:
+                file.write(img_dl)
+    except:
+        print(f"Failed to download IMG file: {link}")
