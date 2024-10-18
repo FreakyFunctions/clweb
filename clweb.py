@@ -1,45 +1,45 @@
-webpage = input("Scrape Website: ")
+webpage = input("Scrape Website: ") # important we get webpage first!
 
 # packages
 
-import requests
-from bs4 import BeautifulSoup
+import requests # Scraping
+from bs4 import BeautifulSoup # Scraping
 import re
 import os
-from urllib.parse import urlparse
-from requests.utils import cookiejar_from_dict
-from fake_useragent import UserAgent
+from urllib.parse import urlparse # Urlib
+from requests.utils import cookiejar_from_dict # CookieJar
+from fake_useragent import UserAgent # UserAgents
 
 # session
 
-session = requests.session()
+session = requests.session() # start a new session
 
 # cookies (you edit these)
 
-cookies = {
+cookies = { # cookies for the session, helpful for sites that need login
     "Cookie1": "test",
     "Cookie2": "test"
 }
 
-cookiejar = cookiejar_from_dict(cookies)
+cookiejar = cookiejar_from_dict(cookies) # convert that to a cookie jar
 
-session.cookies.update(cookiejar)
+session.cookies.update(cookiejar) # update cookies!!
 
 # agent
 
-ua = UserAgent()
-agent = ua.random
+ua = UserAgent() # create a user agent session
+agent = ua.random # random user agent
 
 # failed at adding selenium, sad moment.
 
-headers = {"User-Agent": agent}
+headers = {"User-Agent": agent} # header
 
 # request webpage
 
-req = ""
+req = "" # blank saving for later
 
 try:
-    req = session.get(url=webpage, headers=headers)
+    req = session.get(url=webpage, headers=headers) # set it to the contents we are scraping
 except:
     print("Invalid url")
     exit(0)
@@ -52,7 +52,9 @@ img = []
 
 # start the scraping
 
-web = BeautifulSoup(req.content, 'html5lib')
+web = BeautifulSoup(req.content, 'html5lib') # scraper
+
+# the rest of this is undocumented
 
 def startswith(string, prefix):
     if string is None or prefix is None:
