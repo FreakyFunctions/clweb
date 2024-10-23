@@ -115,17 +115,17 @@ for im in web.find_all('img', src=True):
     img.append(get_url(link))
     im['src'] = use(link)
 
-for meta in web.find_all('meta', content=True):
-    link = meta.get('content')
-    if startswith(link, "http"):
-        etc.append(get_url(link))
-        meta['content'] = use(link)
-
 for lin in web.find_all('link', href=True):
     link = lin.get('href')
     if not endswith(link, ".css"):
         etc.append(get_url(link))
         lin['href'] = use(link)
+
+for anchor in web.find_all('a', href=True):
+    link = anchor.get('href')
+    etc.append(get_url(link))
+    anchor['href'] = use(link)
+
 
 # we got the links and allat lets go ahead and just download em including the webpage
 
@@ -254,15 +254,98 @@ for link in img:
     except:
         print(f"Failed to download IMG file: {link}")
 
+htmls = []
+
 for link in etc:
     try:
-        save_path = create_folder_structure(link)
-        if not os.path.isfile(save_path):
-            etc_dl = requests.get(url=link, headers=headers).content
-            with open(save_path) as file:
-                file.write(etc_dl)
-                print(f"Downloading Other File: {link}")
+        if endswith(".html"):
+            htmls.append(link)
+        else:
+            print(f"Downloading File: {link}")
+            save_path = create_folder_structure(link)
+            if not os.path.isfile(save_path):
+                css_content = requests.get(url=link, headers=headers).text
+                with open(save_path, 'w') as file:
+                    file.write(css_content)
     except:
         print(f"Failed to download Other file: {link}")
+
+for html in htmls:
+    try:
+        js = []
+        css = []
+        img = []
+        etc = []
+
+        for script in web.find_all('script', src=True):
+            src = script.get('src')
+            if endswith(src, '.js'):
+                js.append(get_url(src))
+                script['src'] = use(src)
+
+        for style in web.find_all('link', rel="stylesheet"):
+            link = style.get('href')
+            link2 = style.get('data-href')
+            if endswith(link, '.css'):
+                css.append(get_url(link))
+                style['href'] = use(link)
+            if endswith(link2, '.css'):
+                css.append(get_url(link2))
+                style['href'] = use(link2)
+
+        for im in web.find_all('img', src=True):
+            link = im.get('src')
+            img.append(get_url(link))
+            im['src'] = use(link)
+
+        for lin in web.find_all('link', href=True):
+            link = lin.get('href')
+            if not endswith(link, ".css"):
+                etc.append(get_url(link))
+                lin['href'] = use(link)
+
+        for anchor in web.find_all('a', href=True):
+            link = anchor.get('href')
+            etc.append(get_url(link))
+            anchor['href'] = use(link)
+
+        for link in js:
+            try:
+                print(f"Downloading JS: {link}")
+                save_path = create_folder_structure(link)
+                if not os.path.isfile(save_path):
+                    js_content = requests.get(url=link, headers=headers).text
+                    js_content = download_additional_assets(js_content, ".js")
+                    with open(save_path, 'w') as file:
+                        file.write(js_content)
+            except:
+                print(f"Failed to download JS file: {link}")
+        
+        for link in css:
+            try:
+                print(f"Downloading CSS: {link}")
+                save_path = create_folder_structure(link)
+                if not os.path.isfile(save_path):
+                    css_content = requests.get(url=link, headers=headers).text
+                    css_content = download_additional_assets(css_content, ".css")
+                    with open(save_path, 'w') as file:
+                        file.write(css_content)
+            except:
+                print(f"Failed to download CSS file: {link}")
+        
+        for link in img:
+            try:
+                save_path = create_folder_structure(link)
+                if not os.path.isfile(save_path):
+                    img_dl = requests.get(url=link, headers=headers).content
+                    with open(save_path, 'wb') as file:
+                        file.write(img_dl)
+                        print(f"Downloading IMG: {link}")
+            except:
+                print(f"Failed to download IMG file: {link}")
+
+        print("Scraped HTML file")
+    except:
+        print("Failed scraping HTML file.")
 
 print("Finished Scraping")
