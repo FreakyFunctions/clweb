@@ -11,17 +11,17 @@ This probably has a ton of vulnerabilities so don't use in production!! This sho
 - Saving HTML, JS, CSS, and Images.
 - Saving the content like images inside css files, etc.
 - Creating folders based off the ones in the link.
-- Replacing URLs for local-use. (Broken)
+- Replacing URLs for local-use.
 - Beautified HTML
 - Clean Saving
 - User-Agent usage
-# Coming Soon
-- Fixing replacing urls
-- Full scrape of html, so it works locally
-- Beautified JS and CSS (needed badly)
+- Looks for anchor tags with .html, scrapes!!
+- Fast scraping since its in Python.
+# Upcoming
+- Rework
 # Contributors
 - me
 - me
 - me
 # Bugs
-- Replacing URLS don't work lmao
+- No bugs found yet!
