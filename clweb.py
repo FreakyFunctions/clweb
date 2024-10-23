@@ -258,7 +258,8 @@ htmls = []
 
 for link in etc:
     try:
-        if endswith(".html"):
+        if endswith(link, "html"):
+            print("Added HTML file to Queue.")
             htmls.append(link)
         else:
             print(f"Downloading File: {link}")
@@ -270,12 +271,18 @@ for link in etc:
     except:
         print(f"Failed to download Other file: {link}")
 
-for html in htmls:
+print(htmls)
+
+for link in htmls:
     try:
         js = []
         css = []
         img = []
         etc = []
+
+        htmlx = session.get(link, headers=headers, cookies=cookies).content
+
+        web = BeautifulSoup(htmlx, 'html5lib')
 
         for script in web.find_all('script', src=True):
             src = script.get('src')
@@ -309,6 +316,16 @@ for html in htmls:
             etc.append(get_url(link))
             anchor['href'] = use(link)
 
+        try:
+            with open(create_folder_structure(link), 'w') as index:
+                html_content = web.prettify()
+                updated_html = process_html(html_content, js, css, img)
+                index.write(updated_html)
+                print('Created HTML file')
+        except Exception as e:
+            print(f'Failed to create HTML file due to {e}')
+            exit()
+
         for link in js:
             try:
                 print(f"Downloading JS: {link}")
@@ -335,12 +352,13 @@ for html in htmls:
         
         for link in img:
             try:
-                save_path = create_folder_structure(link)
-                if not os.path.isfile(save_path):
-                    img_dl = requests.get(url=link, headers=headers).content
-                    with open(save_path, 'wb') as file:
-                        file.write(img_dl)
-                        print(f"Downloading IMG: {link}")
+                if not endswith(".html"):
+                    save_path = create_folder_structure(link)
+                    if not os.path.isfile(save_path):
+                        img_dl = requests.get(url=link, headers=headers).content
+                        with open(save_path, 'wb') as file:
+                            file.write(img_dl)
+                            print(f"Downloading IMG: {link}")
             except:
                 print(f"Failed to download IMG file: {link}")
 
