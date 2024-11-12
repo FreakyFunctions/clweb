@@ -17,8 +17,14 @@ This probably has a ton of vulnerabilities so don't use in production!! This sho
 - User-Agent usage
 - Looks for anchor tags with .html, scrapes!!
 - Fast scraping since its in Python.
+- NEW: Upgraded scraper, x10 faster, with the power of rewriting.
+- NEW: Replacing urls just got better!
+- NEW: Uses loops instead of the old code... (better)
 # Upcoming
-- Rework
+- Replacing <link> and downloading urls.
+- Replacing <meta> and downloading urls.
+- Upgraded URL Replacing.
+- Upgraded Scraper.
 # Contributors
 - me
 - me
