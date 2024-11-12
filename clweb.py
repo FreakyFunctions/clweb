@@ -1,369 +1,106 @@
-webpage = input("Scrape Website: ") # important we get webpage first!
-
-# packages
-
-import requests # Scraping
-from bs4 import BeautifulSoup # Scraping
-import re
 import os
-from urllib.parse import urlparse # Urlib
-from requests.utils import cookiejar_from_dict # CookieJar
-from fake_useragent import UserAgent # UserAgents
+import re
+import requests
+from urllib.parse import urlparse, urljoin
+from requests.utils import cookiejar_from_dict
+from fake_useragent import UserAgent
+from bs4 import BeautifulSoup
 
-# session
+# User inputs
+webpage = input("Scrape Website: ")
+project_folder = input("Folder Name: ")
+html_filename = input("Base Name (example: Scraped.html): ")
 
-session = requests.session() # start a new session
+# Initialize session and headers
+session = requests.Session()
+cookies = {"Cookie1": "test", "Cookie2": "test"}
+session.cookies.update(cookiejar_from_dict(cookies))
 
-# cookies (you edit these)
+ua = UserAgent()
+headers = {"User-Agent": ua.random}
 
-cookies = { # cookies for the session, helpful for sites that need login
-    "Cookie1": "test",
-    "Cookie2": "test"
-}
+# Ensure the project folder exists
+os.makedirs(project_folder, exist_ok=True)
 
-cookiejar = cookiejar_from_dict(cookies) # convert that to a cookie jar
+# Helper functions
+def is_valid_url(url):
+    return url and url.startswith('http')
 
-session.cookies.update(cookiejar) # update cookies!!
+def resolve_url(url):
+    """Resolve a relative URL to an absolute one based on the webpage's base URL."""
+    return urljoin(webpage, url)
 
-# agent
-
-ua = UserAgent() # create a user agent session
-agent = ua.random # random user agent
-
-# failed at adding selenium, sad moment.
-
-headers = {"User-Agent": agent} # header
-
-# request webpage
-
-req = "" # blank saving for later
-
-try:
-    req = session.get(url=webpage, headers=headers) # set it to the contents we are scraping
-except:
-    print("Invalid url")
-    exit(0)
-
-# our things we will download
-
-js = []
-css = []
-img = []
-etc = []
-
-# start the scraping
-
-web = BeautifulSoup(req.content, 'html5lib') # scraper
-
-# the rest of this is undocumented
-
-def startswith(string, prefix):
-    if string is None or prefix is None:
-        return False
-    return string[:len(prefix)] == prefix
-
-def endswith(string, suffix):
-    if string is None or suffix is None:
-        return False
-    return string[-len(suffix):] == suffix
-
-def get_url(url):
-    if startswith(url, 'http'):
-        return url
-    return requests.compat.urljoin(webpage, url)
-    
-def create_folder_structure(url):
+def create_save_path(url):
+    """Create the directory structure and return the local file path to save the asset."""
     parsed_url = urlparse(url)
-    path_parts = parsed_url.path.strip("/").split('/')
-    
-    current_path = ""
-    for part in path_parts[:-1]:
-        current_path = os.path.join(current_path, part)
-        if not os.path.exists(current_path):
-            os.mkdir(current_path)
-    
-    return os.path.join(current_path, path_parts[-1])
-
-def use(url):
-    parsed_url = urlparse(url)
-    path_parts = parsed_url.path.strip("/").split('/')
-
-    current_path = ""
-    for part in path_parts[:-1]:
-        current_path = os.path.join(current_path, part)
-
-    return os.path.join(current_path, path_parts[-1])
-
-for script in web.find_all('script', src=True):
-    src = script.get('src')
-    if endswith(src, '.js'):
-        js.append(get_url(src))
-        script['src'] = use(src)
-
-for style in web.find_all('link', rel="stylesheet"):
-    link = style.get('href')
-    link2 = style.get('data-href')
-    if endswith(link, '.css'):
-        css.append(get_url(link))
-        style['href'] = use(link)
-    if endswith(link2, '.css'):
-        css.append(get_url(link2))
-        style['href'] = use(link2)
-
-for im in web.find_all('img', src=True):
-    link = im.get('src')
-    img.append(get_url(link))
-    im['src'] = use(link)
-
-for lin in web.find_all('link', href=True):
-    link = lin.get('href')
-    if not endswith(link, ".css"):
-        etc.append(get_url(link))
-        lin['href'] = use(link)
-
-for anchor in web.find_all('a', href=True):
-    link = anchor.get('href')
-    etc.append(get_url(link))
-    anchor['href'] = use(link)
-
-
-# we got the links and allat lets go ahead and just download em including the webpage
-
-project = input("Folder Name: ")
-this_file = input("Base Name (example: Scraped.html): ")
-
-# last minute functions
-
-def download_additional_assets(file_content, file_extension):
-    additional_assets = []
-
-    url_pattern = re.compile(r'url\([\'"]?(.*?)[\'"]?\)')
-    
-    for match in url_pattern.findall(file_content):
-        if not startswith(match, 'data:'):
-            asset_url = get_url(match)
-            additional_assets.append(asset_url)
-    
-    for asset_url in additional_assets:
-        try:
-            save_path = create_folder_structure(asset_url)
-            if not os.path.isfile(save_path):
-                asset_data = requests.get(url=asset_url, headers=headers).content
-                with open(save_path, 'wb') as file:
-                    file.write(asset_data)
-            
-            file_content = file_content.replace(asset_url, save_path)
-        except:
-            print(f"Failed to download asset: {asset_url}")
-    
-    return file_content
-
-# create folder
-
-try:
-    if os.path.isdir(project) == False:
-        os.mkdir(project)
-
-    os.chdir(project)
-except:
-    print("Failed to create folder")
-    exit()
-
-# html function thingies
+    save_path = os.path.join(project_folder, *parsed_url.path.strip('/').split('/'))
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    return save_path
 
 def replace_urls(content, original_urls, local_paths):
+    """Replace all asset URLs in the content with their corresponding local file paths."""
     for original_url, local_path in zip(original_urls, local_paths):
         content = re.sub(re.escape(original_url), local_path, content)
     return content
 
-def replace_in_file(file_path, original_urls, local_paths):
+def download_asset(url, save_path, binary=False):
+    """Download an asset from the given URL and save it to the specified local path."""
     try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            content = file.read()
-        
-        updated_content = replace_urls(content, original_urls, local_paths)
-        
-        with open(file_path, 'w', encoding='utf-8') as file:
-            file.write(updated_content)
-        print(f"Replaced URLs in {file_path}")
-    except Exception as e:
-        print(f"Failed to replace URLs in {file_path}. Error: {e}")
+        response = session.get(url, headers=headers)
+        response.raise_for_status()
+        mode = 'wb' if binary else 'w'
+        with open(save_path, mode) as file:
+            file.write(response.content if binary else response.text)
+        print(f"Downloaded: {url}")
+    except requests.RequestException as e:
+        print(f"Failed to download {url}: {e}")
 
-def process_html(html_content, js, css, img):
-    all_urls = js + css + img
-    local_paths = [create_folder_structure(url) for url in all_urls]
-    updated_html = replace_urls(html_content, all_urls, local_paths)
-    
-    return updated_html
+def convert_to_local_path(url):
+    """Generate a local path relative to the project folder for a given URL."""
+    parsed_url = urlparse(url)
+    return os.path.join(*parsed_url.path.strip('/').split('/'))
 
-# create html file
+def collect_assets(soup, assets, tag, attribute, category, extensions):
+    """Collect assets (e.g., scripts, stylesheets, images) from the HTML soup."""
+    for element in soup.find_all(tag, {attribute: True}):
+        url = element.get(attribute)
+        if url and any(url.endswith(ext) for ext in extensions):
+            full_url = resolve_url(url)
+            assets[category].append(full_url)
+            element[attribute] = convert_to_local_path(full_url)
 
-try:
-    with open(this_file, 'w') as index:
-        html_content = web.prettify()
-        updated_html = process_html(html_content, js, css, img)
-        index.write(updated_html)
-        print('Created HTML file')
-except Exception as e:
-    print(f'Failed to create HTML file due to {e}')
-    exit()
-
-# script downloads
-
-def extractfn(url):
-    parsed = urlparse(url)
-    path = parsed.path
-    return os.path.basename(path)
-
-for link in js:
+def download_and_process_html(url, save_path):
+    """Fetch and process an HTML page, downloading its assets and saving them locally."""
     try:
-        print(f"Downloading JS: {link}")
-        save_path = create_folder_structure(link)
-        if not os.path.isfile(save_path):
-            js_content = requests.get(url=link, headers=headers).text
-            js_content = download_additional_assets(js_content, ".js")
-            with open(save_path, 'w') as file:
-                file.write(js_content)
-    except:
-        print(f"Failed to download JS file: {link}")
+        response = session.get(url, headers=headers)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html5lib')
+    except requests.RequestException as e:
+        print(f"Failed to fetch {url}: {e}")
+        return
 
-# css downloads, hopefully easier?
+    # Collect assets
+    assets = {"js": [], "css": [], "img": [], "other": []}
+    collect_assets(soup, assets, 'script', 'src', 'js', ['.js'])
+    collect_assets(soup, assets, 'link', 'href', 'css', ['.css'])
+    collect_assets(soup, assets, 'img', 'src', 'img', [])
+    collect_assets(soup, assets, 'a', 'href', 'other', [])
+    collect_assets(soup, assets, 'link', 'href', 'other', [])
 
-for link in css:
-    try:
-        print(f"Downloading CSS: {link}")
-        save_path = create_folder_structure(link)
-        if not os.path.isfile(save_path):
-            css_content = requests.get(url=link, headers=headers).text
-            css_content = download_additional_assets(css_content, ".css")
-            with open(save_path, 'w') as file:
-                file.write(css_content)
-    except:
-        print(f"Failed to download CSS file: {link}")
+    # Download assets
+    for category, urls in assets.items():
+        for asset_url in urls:
+            local_save_path = create_save_path(asset_url)
+            is_binary = category == 'img'
+            download_asset(asset_url, local_save_path, binary=is_binary)
 
-# image.
+    # Save the processed HTML
+    with open(save_path, 'w', encoding='utf-8') as file:
+        file.write(soup.prettify())
+    print(f"Saved HTML file: {save_path}")
 
-for link in img:
-    try:
-        save_path = create_folder_structure(link)
-        if not os.path.isfile(save_path):
-            img_dl = requests.get(url=link, headers=headers).content
-            with open(save_path, 'wb') as file:
-                file.write(img_dl)
-                print(f"Downloading IMG: {link}")
-    except:
-        print(f"Failed to download IMG file: {link}")
+# Main script
+main_html_path = os.path.join(project_folder, html_filename)
+download_and_process_html(webpage, main_html_path)
 
-htmls = []
-
-for link in etc:
-    try:
-        if endswith(link, "html"):
-            print("Added HTML file to Queue.")
-            htmls.append(link)
-        else:
-            print(f"Downloading File: {link}")
-            save_path = create_folder_structure(link)
-            if not os.path.isfile(save_path):
-                css_content = requests.get(url=link, headers=headers).text
-                with open(save_path, 'w') as file:
-                    file.write(css_content)
-    except:
-        print(f"Failed to download Other file: {link}")
-
-print(htmls)
-
-for link in htmls:
-    try:
-        js = []
-        css = []
-        img = []
-        etc = []
-
-        htmlx = session.get(link, headers=headers, cookies=cookies).content
-
-        web = BeautifulSoup(htmlx, 'html5lib')
-
-        for script in web.find_all('script', src=True):
-            src = script.get('src')
-            if endswith(src, '.js'):
-                js.append(get_url(src))
-                script['src'] = use(src)
-
-        for style in web.find_all('link', rel="stylesheet"):
-            link = style.get('href')
-            link2 = style.get('data-href')
-            if endswith(link, '.css'):
-                css.append(get_url(link))
-                style['href'] = use(link)
-            if endswith(link2, '.css'):
-                css.append(get_url(link2))
-                style['href'] = use(link2)
-
-        for im in web.find_all('img', src=True):
-            link = im.get('src')
-            img.append(get_url(link))
-            im['src'] = use(link)
-
-        for lin in web.find_all('link', href=True):
-            link = lin.get('href')
-            if not endswith(link, ".css"):
-                etc.append(get_url(link))
-                lin['href'] = use(link)
-
-        for anchor in web.find_all('a', href=True):
-            link = anchor.get('href')
-            etc.append(get_url(link))
-            anchor['href'] = use(link)
-
-        try:
-            with open(create_folder_structure(link), 'w') as index:
-                html_content = web.prettify()
-                updated_html = process_html(html_content, js, css, img)
-                index.write(updated_html)
-                print('Created HTML file')
-        except Exception as e:
-            print(f'Failed to create HTML file due to {e}')
-            exit()
-
-        for link in js:
-            try:
-                print(f"Downloading JS: {link}")
-                save_path = create_folder_structure(link)
-                if not os.path.isfile(save_path):
-                    js_content = requests.get(url=link, headers=headers).text
-                    js_content = download_additional_assets(js_content, ".js")
-                    with open(save_path, 'w') as file:
-                        file.write(js_content)
-            except:
-                print(f"Failed to download JS file: {link}")
-        
-        for link in css:
-            try:
-                print(f"Downloading CSS: {link}")
-                save_path = create_folder_structure(link)
-                if not os.path.isfile(save_path):
-                    css_content = requests.get(url=link, headers=headers).text
-                    css_content = download_additional_assets(css_content, ".css")
-                    with open(save_path, 'w') as file:
-                        file.write(css_content)
-            except:
-                print(f"Failed to download CSS file: {link}")
-        
-        for link in img:
-            try:
-                if not endswith(".html"):
-                    save_path = create_folder_structure(link)
-                    if not os.path.isfile(save_path):
-                        img_dl = requests.get(url=link, headers=headers).content
-                        with open(save_path, 'wb') as file:
-                            file.write(img_dl)
-                            print(f"Downloading IMG: {link}")
-            except:
-                print(f"Failed to download IMG file: {link}")
-
-        print("Scraped HTML file")
-    except:
-        print("Failed scraping HTML file.")
-
-print("Finished Scraping")
+print("Scraping completed.")
